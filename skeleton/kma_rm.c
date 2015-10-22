@@ -243,7 +243,7 @@ kma_free(void* ptr, kma_size_t size)
 				if(pre + pre->size == (kma_page_t*)ptr){
 					printf("merge 1 and 2 middle\n");
 					pre->size = pre->size + ((kma_page_t*)ptr)->size;
-					pre->ptr = temp->ptr;
+					pre->ptr = ((kma_page_t*)ptr)->ptr;
 				}
 				else{
 					pre->ptr = (kma_page_t*)ptr;
