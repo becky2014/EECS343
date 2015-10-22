@@ -88,7 +88,7 @@
 typedef struct
 {
   int id;			//page id
-  void* ptr;		
+  void* ptr;		// next pointer	
   int size;
 } kma_page_t;
 

@@ -75,7 +75,7 @@ void* kma_malloc(kma_size_t size)
   page = get_page();
   
   // add a pointer to the page structure at the beginning of the page
-  *((kma_page_t**)page->ptr) = page;       //???????
+  *((kma_page_t**)page->ptr) = page;       //??????? *((kma_page_t*)page->str) = page;
   
   if ((size + sizeof(kma_page_t*)) > page->size)
     { // requested size too large
@@ -90,7 +90,7 @@ void* kma_malloc(kma_size_t size)
   //}
   // oh yea, it worked
   
-  return page->ptr + sizeof(kma_page_t*);
+  return page->ptr + sizeof(kma_page_t*);  // move pointer ??????? &page->ptr + 
 }
 
 void kma_free(void* ptr, kma_size_t size)
