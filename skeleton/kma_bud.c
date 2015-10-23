@@ -55,18 +55,54 @@
  *  variables should be in all lower case. When initializing
  *  structures and arrays, line everything up in neat columns.
  */
+typedef struct{
+	void* next;
+}node;
+
+typedef struct{
+	int size;
+	node head;	//pointer to the first free node in the list
+
+}header_list;
+
+//tyr
+typedef struct{
+	/* data */
+}page;
+
+
 
 /************Global Variables*********************************************/
-
+kma_page_t* entry = NULL;
 /************Function Prototypes******************************************/
-	
+void splitBuffer();
+
+kma_size_t roundSizeUp(kma_size_t size);
+
 /************External Declaration*****************************************/
 
 /**************Implementation***********************************************/
 
 void* kma_malloc(kma_size_t size)
 {
-  return NULL;
+	if(){
+		return NULL;
+	}
+	if(!entry){
+		entry = get_page();
+
+	}
+
+
+  
+}
+
+kma_size_t roundSizeUp(kma_size_t size){
+	kma_size_t startSize = 32;		//the smallest size block is 32
+	while(size > startSize){
+		startSize = startSize << 1; 	//move 1 bit left 
+	}
+	return startSize;
 }
 
 void kma_free(void* ptr, kma_size_t size)

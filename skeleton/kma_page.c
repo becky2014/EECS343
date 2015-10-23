@@ -98,7 +98,7 @@ get_page()
   
   assert(res->ptr != NULL);
   
-  return res;	
+  return res;	    //return a structure, res->ptr is the actual page
 }
 
 void
