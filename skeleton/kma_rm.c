@@ -88,13 +88,15 @@ kma_malloc(kma_size_t size)
 		return NULL;
 	}
 	void* res = NULL;
-	if(!entry){	//if linkedlist is null
+	if(entry == NULL){	//if linkedlist is null
 		//add it to linked list, it's the head pointer of the linkedlist
 		// entry= get_page()->ptr + sizeof(kma_page_t*); //
 		// printf("entry pointer 0 %p\n",get_page());
 		// printf("entry pointer ptr %p\n",get_page()->ptr);
-		
-		entry= get_page() + sizeof(kma_page_t*); 
+		entry = get_page();
+		*((kma_page_t**)entry->ptr) = entry;
+		entry = entry->ptr;
+		// entry= get_page() + sizeof(kma_page_t*); 
 		// ()entry->ptr = entry;
 		 // *((kma_page_t**)entry->ptr) = entry;
 		// printf("entry pointer 1 %p\n", entry);
@@ -117,7 +119,7 @@ kma_malloc(kma_size_t size)
 //find the first free block in the linkedlist
 kma_page_t* firstFit(int size){
 	//traverse the linkedlist 
-	printf("call firstfit function\n");
+	// printf("call firstfit function\n");
 	kma_page_t* temp = entry;	//entry is the head of the linkedlist
 	// printf("pointer temp %p\n", temp);
 	// printf("temp size %d\n",temp->size);
@@ -136,7 +138,7 @@ kma_page_t* firstFit(int size){
 			
 
 			pre = temp;
-			printf("pre size %d\n",pre->size);
+			// printf("pre size %d\n",pre->size);
 			temp = (kma_page_t*)temp->ptr;	//move the pointer to next free node
 			if(temp == NULL){
 				printf("didnt find anything!!!!!!!!\n");
@@ -168,11 +170,11 @@ kma_page_t* firstFit(int size){
 			temp = temp + size;
 			temp->size = res->size - size;
 			temp->ptr = res->ptr;    ///////////move pointer and the next for pointer also lost
-			printf("temp size %d\n",temp->size);
+			// printf("temp size %d\n",temp->size);
 			if((kma_page_t*)(temp->ptr) != NULL){
 				printf("entry->ptr->size2 %d\n",((kma_page_t*)(temp->ptr))->size);}
 
-			printf("temp size %d\n", temp->size);
+			// printf("temp size %d\n", temp->size);
 			if(pre != NULL){
 				pre->ptr = temp;
 			}
@@ -198,10 +200,14 @@ kma_page_t* firstFit(int size){
 	else{
 		printf("get another new page\n");
 		kma_page_t* newpage = get_page();
+		newpage = newpage + sizeof(kma_page_t*);
+		res = newpage;
+		newpage = newpage + size;
 		newpage->ptr = NULL;
-		pre->ptr = newpage + sizeof(kma_page_t*);
-
-		return firstFit(size);
+		newpage->size = PAGESIZE - sizeof(kma_page_t*) - size;
+		pre->ptr = newpage;
+		return res;
+		// return firstFit(size);
 	}
 	//// return NULL;
 }
@@ -293,13 +299,25 @@ kma_free(void* ptr, kma_size_t size)
 			((kma_page_t*)ptr)->size = size;
 		}
 	}
+
 	//free page
-	if(entry->size == (PAGESIZE - sizeof(kma_page_t*))){
-		printf("free page\n");
-		entry = entry - sizeof(kma_page_t*);
-		free_page(entry);
-		// entry = NULL;
-	}
+	kma_page_t* temp2 = entry;
+	kma_page_t* pre2 = NULL;
+	// while(temp2 != NULL){
+	// 	pre2 = temp2;
+	// 	if(temp2->size == (PAGESIZE - sizeof(kma_page_t*))){
+	// 		printf("free page\n");
+	// 		temp2 = temp2->ptr;
+	// 		// entry = entry - sizeof(kma_page_t*);
+	// 		free_page(pre2);
+	// 	}
+	// 	else{
+	// 		temp2 = temp2->ptr;
+	// 	}
+		
+	// }
+	
+	
 }
 
 #endif // KMA_RM
