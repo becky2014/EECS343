@@ -82,6 +82,7 @@ kma_page_t* firstFit(int size);
 void*
 kma_malloc(kma_size_t size)
 {
+	printf("size %d\n", size);
 	if ((size + sizeof(kma_page_t*)) > PAGESIZE)
 	{ 	// requested size too large
 		return NULL;
@@ -94,24 +95,22 @@ kma_malloc(kma_size_t size)
 		// printf("entry pointer ptr %p\n",get_page()->ptr);
 		
 		entry= get_page() + sizeof(kma_page_t*); 
-
-		printf("entry pointer 1 %p\n", entry);
-		
-
+		// ()entry->ptr = entry;
+		 // *((kma_page_t**)entry->ptr) = entry;
+		// printf("entry pointer 1 %p\n", entry);
 		res = (void*)entry;
-		printf("size %d\n", size);
 		entry = entry + size;
 		entry->ptr = NULL;  //entry->next = NULL
 		entry->size = PAGESIZE - sizeof(kma_page_t*) - size;
 		// entry2 = entry + size;  //move entry forward 
-		printf("entry pointer 2 %p\n", entry);
+		// printf("entry pointer 2 %p\n", entry);
 		// printf("-------- %ld\n", entry2 - entry);
 		return res;
 	}
 	//linkedlist is not null, find the first suitable free block
 	//return the node to the free block
 	res = (void*) firstFit(size);
-	printf("res %p\n", res);
+	// printf("res %p\n", res);
 	return res;
 }
 
@@ -120,25 +119,35 @@ kma_page_t* firstFit(int size){
 	//traverse the linkedlist 
 	printf("call firstfit function\n");
 	kma_page_t* temp = entry;	//entry is the head of the linkedlist
-	printf("pointer temp %p\n", temp);
+	// printf("pointer temp %p\n", temp);
 	// printf("temp size %d\n",temp->size);
-	printf("entry size %d\n",entry->size);
+	// if((kma_page_t*)(temp->ptr) != NULL){
+		// printf("entry->ptr->size %d\n",((kma_page_t*)(temp->ptr))->size);}
+	// printf("entry size %d\n",entry->size);
 
 	kma_page_t* pre = NULL;
 	kma_page_t* res = NULL;
 
 	while(temp != NULL){
-		printf("in while loop\n");
+		// printf("in while loop\n");
 		// pre = temp;
 
 		if(temp->size < size){
-			printf("temp size %d\n",temp->size);
+			
 
 			pre = temp;
-			temp = temp->ptr;	//move the pointer to next free node
+			printf("pre size %d\n",pre->size);
+			temp = (kma_page_t*)temp->ptr;	//move the pointer to next free node
+			if(temp == NULL){
+				printf("didnt find anything!!!!!!!!\n");
+			}
+
+			// printf("entry->ptr->size %d",((kma_page_t*)(entry->ptr))->size);
+			// printf("first fit %d, %d \n", entry->size, ((kma_page_t*)(entry->ptr))->size);
+			continue;
 		}
 		else{				   //(temp->size >= size)
-			printf("find suitable block\n");
+			// printf("find suitable block\n");
 			//remove this node from linkedlist
 			if(temp->size - size == 0){
 				printf("exactly size \n");
@@ -153,33 +162,47 @@ kma_page_t* firstFit(int size){
 				}
 				return temp;
 			}
-			printf("actual size larger than needed size\n");
-			printf("pointer temp outside the if %p\n", temp);
+			// printf("actual size larger than needed size\n");
+			// printf("pointer temp outside the if %p\n", temp);
 			res = temp;
 			temp = temp + size;
 			temp->size = res->size - size;
-			// printf("temp size %d\n", temp->size);
+			temp->ptr = res->ptr;    ///////////move pointer and the next for pointer also lost
+			printf("temp size %d\n",temp->size);
+			if((kma_page_t*)(temp->ptr) != NULL){
+				printf("entry->ptr->size2 %d\n",((kma_page_t*)(temp->ptr))->size);}
+
+			printf("temp size %d\n", temp->size);
 			if(pre != NULL){
 				pre->ptr = temp;
 			}
 			else{
+				// printf("33333333333\n");
 				entry = temp;
-				printf("entry size %d\n", entry->size);
-				printf("change the entry pointer\n");
+
+				// entry->ptr = temp;
+				if((kma_page_t*)(entry->ptr) != NULL){
+					printf("entry->ptr size %d, %d\n", entry->size, ((kma_page_t*)(entry->ptr))->size);
+				}
+				// printf("change the entry pointer\n");
 			}
+
 			return res;
 		}
 	}
-	//if it runs out of free lists, then get a new page
-	// if(entry == NULL){
-	// 	return kma_malloc(size);	//
-	// }
-	// else{
-	// 	kma_page_t* newpage = get_page();
-	// 	newpage->ptr = NULL;
-	// 	pre->ptr = newpage + sizeof(kma_page_t*);
-	// 	return firstFit(size);
-	// }
+	// //if it runs out of free lists, then get a new page
+	if(entry == NULL){
+		printf("use up one page\n");
+		return kma_malloc(size);	//
+	}
+	else{
+		printf("get another new page\n");
+		kma_page_t* newpage = get_page();
+		newpage->ptr = NULL;
+		pre->ptr = newpage + sizeof(kma_page_t*);
+
+		return firstFit(size);
+	}
 	//// return NULL;
 }
 
@@ -198,14 +221,16 @@ kma_free(void* ptr, kma_size_t size)
 		return;
 	}
 	while(temp != NULL){
-		printf("temp->size %d\n",temp->size);
-		printf("in while loop kma free\n");
-		if((kma_page_t*)ptr > temp){ 
+		// printf("temp->size %d\n",temp->size);
+		// printf("in while loop kma free\n");
+		if((kma_page_t*)ptr > temp){
+			printf("move pointer forward \n"); 
 			pre = temp; 
-			temp = temp->ptr;
+			temp = (kma_page_t*)temp->ptr;
+			continue;
 		}
 		else{
-			printf("ptr less than temp\n");
+			// printf("ptr less than temp\n");
 			if(temp == entry){	//insert before the head node  pre == NULL
 				printf("insert before the head node\n");
 				// printf("(kma_page_t*)ptr + size): %p\n", (kma_page_t*)ptr + size);
@@ -222,6 +247,11 @@ kma_free(void* ptr, kma_size_t size)
 					((kma_page_t*)ptr)->ptr = entry;	//insert it at head
 					((kma_page_t*)ptr)->size = size;
 					entry = (kma_page_t*)ptr;
+					kma_page_t* temp222 = entry;
+
+
+
+					printf("two size %d, %d \n", temp222->size, ((kma_page_t*)(temp222->ptr))->size);
 				}
 			}
 			else {		//insert node in the middle of the linkedlist 
