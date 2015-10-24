@@ -85,9 +85,9 @@ kma_size_t roundSizeUp(kma_size_t size);
 
 void* kma_malloc(kma_size_t size)
 {
-	if(){
-		return NULL;
-	}
+// 	if(){
+// 		return NULL;
+// 	}
 	if(!entry){
 		entry = get_page();
 
