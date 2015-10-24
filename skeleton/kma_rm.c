@@ -65,6 +65,7 @@
 typedef struct{		//save all free blocks in double linkedlist
 	int size;
 	void* next;
+	int page_id; 	//used for mergering blockes
 }free_block;
 
 typedef struct{
@@ -80,6 +81,7 @@ free_block* entry = NULL;
 /************Function Prototypes******************************************/
 free_block* firstFit(int size);
 free_block* findPosition(int size);
+void checkFreePage();
 /************External Declaration*****************************************/
 
 /**************Implementation***********************************************/
@@ -101,6 +103,7 @@ kma_malloc(kma_size_t size)
 		entry = (free_block*)(page->ptr + sizeof(kma_page_t*));
 		entry->size = PAGESIZE - sizeof(kma_page_t*);
 		entry->next = NULL;
+		entry->page_id = 1;
 		printf("entry 1 %p\n", entry);
 	}
 	//linkedlist is not null, find the first suitable free block
@@ -117,7 +120,6 @@ free_block* firstFit(int size){
 	printf("temp size  %d\n", temp->size);
 	free_block* pre = NULL;
 	free_block* res = NULL;
-
 	while(temp != NULL){
 		printf("in while loop\n");
 		printf("temp->size    %d\n",temp->size);
@@ -144,11 +146,13 @@ free_block* firstFit(int size){
 			if(pre != NULL){
 				int tempsize = temp->size;
 				free_block* tempnext = temp->next; //save temp->next
+				int page_idtemp = temp->page_id;
 				temp = (free_block*)((long)temp + sizeof(void*));
 				res = temp;
 
 				temp = (free_block*)((long)temp + size);
 				temp->size = tempsize - sizeof(void*) - size;		//newsize
+				temp->page_id = page_idtemp;
 				printf("temp new size %d\n", temp->size);
 
 				temp->next = tempnext;		//still the old temp->next
@@ -157,6 +161,7 @@ free_block* firstFit(int size){
 			else{
 				int entrysize = temp->size;
 				free_block* tempnext = temp->next;
+				int temp_pageid = temp->page_id;
 				// printf("entrysize1 %d\n", entrysize);
 				temp->size = size;
 				temp->next = NULL;
@@ -166,7 +171,7 @@ free_block* firstFit(int size){
 				entry = (free_block*)((long)temp + size);
 				entry->next = tempnext;
 				entry->size = entrysize - size - sizeof(void*);
-
+				entry->page_id = temp_pageid;
 				printf("change entry\n");
 				
 			}
@@ -232,7 +237,7 @@ kma_free(void* ptr, kma_size_t size)
 					((free_block*)ptr)->size = size + temp->size + sizeof(void*);
 					((free_block*)ptr)->next = temp->next;
 					entry = (free_block*)ptr;
-					printf("merge at head\n");
+					printf("merge at head size is %d\n", entry->size);
 				}
 				else{	//only change the pointer not the size
 					printf("insert at head\n");
@@ -240,7 +245,7 @@ kma_free(void* ptr, kma_size_t size)
 					((free_block*)ptr)->next = entry;	//insert it at head
 					((free_block*)ptr)->size = size;
 					entry = (free_block*)ptr;    ////!!!!not sure if it's correct way to move the entry pointer
-					printf("size 1,2 %d %d\n", entry->size, ((free_block*)(entry->next))->size);
+					// printf("size 1,2 %d %d\n", entry->size, ((free_block*)(entry->next))->size);
 				}
 			}
 			else {		//insert node in the middle of the linkedlist 
@@ -249,15 +254,15 @@ kma_free(void* ptr, kma_size_t size)
 					printf("merge 2 and 3 middle\n");
 					ptr = (void*)((long)ptr - sizeof(void*));
 					((free_block*)ptr)->next = temp->next;
-					if(temp->next == NULL){
+					// if(temp->next == NULL){
 						printf("merge with the tail\n");
-						((free_block*)ptr)->size = size + temp->size;
-						printf("tail size%d\n", temp->size);
-					}
-					else{
 						((free_block*)ptr)->size = size + temp->size + sizeof(void*);
-					}
-					
+						// printf("tail size%d\n", ptr->size);
+					// }
+					// else{
+					// 	((free_block*)ptr)->size = size + temp->size + sizeof(void*);
+					// }
+					printf("after merge the size is %d\n", ((free_block*)ptr)->size);
 					// printf("size 2 and 3 %d\n", ((kma_page_t*)ptr)->size);
 				}
 				else{
@@ -271,6 +276,7 @@ kma_free(void* ptr, kma_size_t size)
 					printf("merge 1 and 2 middle\n");
 					pre->size = pre->size + ((free_block*)ptr)->size + sizeof(void*);
 					pre->next = ((free_block*)ptr)->next;
+					printf("after merge the size is %d\n", pre->size);
 				}
 				else{
 					pre->next = ptr;
@@ -291,25 +297,22 @@ kma_free(void* ptr, kma_size_t size)
 	// 	}
 	// }
 	// printf("free page\n");
+	
+}
+
+void checkFreePage(){
 	//free page
 	free_block* freepage = entry;
 	free_block* freepage_pre = NULL;
 	int freepage_size = PAGESIZE - sizeof(kma_page_t*) - sizeof(void*);
-
 	while(freepage != NULL){
-
 		if(freepage->size == freepage_size){
 			if(freepage == entry && freepage->next == NULL){
 				freepage = (free_block*)((long)freepage - sizeof(kma_page_t*));
 				kma_page_t* temp33 = (kma_page_t*) freepage;
-
 				free_page(temp33);
-
 				entry = NULL;
-
 				return;
-
-
 			}		//only node
 
 			// printf(" I wanna free you\n");
@@ -320,18 +323,20 @@ kma_free(void* ptr, kma_size_t size)
 				kma_page_t* temp33 = (kma_page_t*)freepage;
 
 				free_page(temp33);
+
 				freepage = entry;
 				continue;
 			}
 			else if(freepage->next == NULL){	//tail
 				printf("free tail node\n");
-
 				freepage_pre->next = NULL;
+				// printf("show something !!!!!!!\n");
 				kma_page_t* temp33 = (kma_page_t*)freepage;
-
+				printf("temp33 1::::::::: %p\n",temp33);
 				temp33 = (kma_page_t*)((long)temp33 - sizeof(kma_page_t*));
-				
-
+				printf("temp33 2::::::::: %p\n",temp33);
+				// printf("temp33-1::::::: %p\n",temp33-1);
+				// printf("(kma_page_t*)pt: %p\n", (kma_page_t*)ptr);
 				free_page(temp33);
 				printf("finish free the page\n");
 				// return;
@@ -347,32 +352,11 @@ kma_free(void* ptr, kma_size_t size)
 				continue;
 			}
 		}
+		freepage_pre = freepage;
 		freepage = freepage->next;
-	// 	pre2 = temp2;
-	// 	// if(temp2->size == (PAGESIZE - sizeof(kma_page_t*))){
-	// 		printf("free page\n");
-	// 		if(temp2 == entry){  //delete head node
-	// 			entry = entry->ptr;
-	// 			free_page(pre2);
-	// 			temp2 = entry;
-	// 		}
-	// 		else if(temp2->ptr == NULL){ //delete last node
-	// 			pre->ptr = NULL;
-	// 			free_page(temp2);
-	// 			// temp2 = NULL;
-	// 		}
-	// 		else{
-	// 			pre2->ptr = temp2->ptr;
-	// 			free_page(temp2);
-	// 			temp2 = pre2->ptr;
-	// 		}
-	// 	// }
-	// 	// else{
-	// 		// temp2 = temp2->ptr;
-	// 	// }
 	}
-}
 
+}
 
 
 #endif // KMA_RM
