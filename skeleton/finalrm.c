@@ -65,14 +65,14 @@
 typedef struct{		//save all free blocks in double linkedlist
 	int size;
 	void* next;
-	int page_id; 	//used for mergering blockes
+	// int page_id; 	//used for mergering blockes
 }free_block;
 
-// typedef struct{
-// 	kma_page_t* page;		//save page information
-// 	free_block* head;		//save head pointer
-// 	pageHeader* next;
-// }pageHeader;
+typedef struct{
+	kma_page_t* page;		//save page information
+	free_block* head;		//save head pointer
+	pageHeader* next;
+}pageHeader;
 
 /************Global Variables*********************************************/
 // kma_page_t* entry = NULL;		//entry pointer, always points to the free memory
