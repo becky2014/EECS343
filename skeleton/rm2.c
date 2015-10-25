@@ -353,3 +353,65 @@ kma_free(void* ptr, kma_size_t size)
 				// entry->size = temp->size;
 				
 				// printf("temp size %d\n", temp->size);
+
+
+
+
+// if((tempPageid == temp->page_id) && (ptr + size == temp)){ //merge the middle node with latter node
+				// 	printf("merge 2 and 3 middle\n");
+				// 	ptr = (void*)((long)ptr - sizeof(void*));
+				// 	((free_block*)ptr)->next = temp->next;
+				// 	// if(temp->next == NULL){
+				// 		printf("merge with the tail\n");
+				// 		((free_block*)ptr)->size = size + temp->size + sizeof(void*);
+				// 		// printf("tail size%d\n", ptr->size);
+				// 	// }
+				// 	// else{
+				// 	// 	((free_block*)ptr)->size = size + temp->size + sizeof(void*);
+				// 	// }
+				// 	printf("after merge the size is %d\n", ((free_block*)ptr)->size);
+				// 	// printf("size 2 and 3 %d\n", ((kma_page_t*)ptr)->size);
+				// }
+				// else{
+				// 	ptr = (void*)((long)ptr - sizeof(void*));
+				// 	((free_block*)ptr)->size = size;
+				// 	((free_block*)ptr)->next = temp;
+				// }
+
+
+
+
+				// free_block* pre_temp = (free_block*)((long)pre + pre->size + sizeof(void*));
+				// if((prePageid == tempPageid) && (pre_temp == ptr)){
+				// 	printf("merge 1 and 2 middle\n");
+				// 	pre->size = pre->size + ((free_block*)ptr)->size + sizeof(void*);
+				// 	pre->next = ((free_block*)ptr)->next;
+				// 	printf("after merge the size is %d\n", pre->size);
+				// }
+				// else{
+				// 	pre->next = ptr;
+				// }
+
+
+
+
+
+
+
+				
+				// if((tempPageid == temp->page_id) && ((free_block*)ptr + size == temp)){
+				// 	//merge into one node
+				// 	ptr = (void*)((long)ptr - sizeof(void*));
+				// 	((free_block*)ptr)->size = size + temp->size + sizeof(void*);
+				// 	((free_block*)ptr)->next = temp->next;
+				// 	entry = (free_block*)ptr;
+				// 	printf("merge at head size is %d\n", entry->size);
+				// }
+				// else{	//only change the pointer not the size
+				// 	printf("insert at head\n");
+				// 	ptr = (void*)((long)ptr - sizeof(void*));
+				// 	((free_block*)ptr)->next = entry;	//insert it at head
+				// 	((free_block*)ptr)->size = size;
+				// 	entry = (free_block*)ptr;    ////!!!!not sure if it's correct way to move the entry pointer
+				// 	// printf("size 1,2 %d %d\n", entry->size, ((free_block*)(entry->next))->size);
+				// }

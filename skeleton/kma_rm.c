@@ -68,10 +68,10 @@ typedef struct{		//save all free blocks in double linkedlist
 	int page_id; 	//used for mergering blockes
 }free_block;
 
-typedef struct{
-	free_block* head;
-	// void* next;		//next pointer
-}header;
+// typedef struct{
+// 	free_block* head;
+// 	// void* next;		//next pointer
+// }header;
 
 /************Global Variables*********************************************/
 // kma_page_t* entry = NULL;		//entry pointer, always points to the free memory
@@ -80,7 +80,7 @@ free_block* entry = NULL;
 //points to the first page
 /************Function Prototypes******************************************/
 free_block* firstFit(int size);
-free_block* findPosition(int size);
+// free_block* findPosition(int size);
 void checkFreePage();
 /************External Declaration*****************************************/
 
@@ -123,20 +123,23 @@ free_block* firstFit(int size){
 	while(temp != NULL){
 		printf("in while loop\n");
 		printf("temp->size    %d\n",temp->size);
-		if(temp->size >= size + sizeof(void*)){
+		if(temp->size >= size + sizeof(free_block)){
 			//remove this node from linkedlist
-			if(temp->size - size - sizeof(void*) == 0){
+			if(temp->size - size - sizeof(free_block) == 0){
 				printf("exact size \n");
 				if(temp == entry){		//head pointer
+					printf("remove head pointer\n");
 					entry = temp->next;
 				}
 				else if(temp->next == NULL){		//tail pointer
+					printf("remove tail pointer\n");
 					pre->next = NULL;
 				}
 				else{
+					printf("remove middle pointer\n");
 					pre->next = temp->next;
 				}
-				temp = (free_block*)((long)temp + sizeof(void*));
+				temp = (free_block*)((long)temp + sizeof(free_block));
 				return temp;
 			}
 			// printf("actual size larger than needed size\n");
@@ -147,11 +150,11 @@ free_block* firstFit(int size){
 				int tempsize = temp->size;
 				free_block* tempnext = temp->next; //save temp->next
 				int page_idtemp = temp->page_id;
-				temp = (free_block*)((long)temp + sizeof(void*));
+				temp = (free_block*)((long)temp + sizeof(free_block));
 				res = temp;
 
 				temp = (free_block*)((long)temp + size);
-				temp->size = tempsize - sizeof(void*) - size;		//newsize
+				temp->size = tempsize - sizeof(free_block) - size;		//newsize
 				temp->page_id = page_idtemp;
 				printf("temp new size %d\n", temp->size);
 
@@ -161,26 +164,24 @@ free_block* firstFit(int size){
 			else{
 				int entrysize = temp->size;
 				free_block* tempnext = temp->next;
-				int temp_pageid = temp->page_id;
+				int entry_pageid = temp->page_id;
 				// printf("entrysize1 %d\n", entrysize);
-				temp->size = size;
-				temp->next = NULL;
-				temp = (free_block*)((long)temp + sizeof(void*));
+				// temp->size = size;
+				// temp->next = NULL;
+				temp = (free_block*)((long)temp + sizeof(free_block));
 				// printf("temp %p\n", temp);
 				res = temp;
 				entry = (free_block*)((long)temp + size);
 				entry->next = tempnext;
-				entry->size = entrysize - size - sizeof(void*);
-				entry->page_id = temp_pageid;
+				entry->size = entrysize - size - sizeof(free_block);
+				entry->page_id = entry_pageid;
 				printf("change entry\n");
-				
 			}
 			return res;
 		}
 		printf("outside if \n");
 		pre = temp;
 		temp = temp->next;
-
 	}
 	printf("outside the while loop\n");
 	//if it runs out of free lists, then get a new page
@@ -192,14 +193,12 @@ free_block* firstFit(int size){
 		printf("get another new page\n");
 		kma_page_t* newpage = get_page();
 		*((kma_page_t**)newpage->ptr) = newpage; 
+		int prePageid = pre->page_id;
 		free_block* newpage_temp = (free_block*)(newpage->ptr + sizeof(kma_page_t*));
 		newpage_temp->size = PAGESIZE - sizeof(kma_page_t*);
 		newpage_temp->next = NULL;
+		newpage_temp->page_id = prePageid+1;
 		pre->next = newpage_temp;
-
-	// 	newpage->ptr = NULL;
-	// 	newpage->size = PAGESIZE;
-	// 	pre->ptr = newpage;
 		return firstFit(size);
 	}
 }
@@ -214,10 +213,11 @@ kma_free(void* ptr, kma_size_t size)
 	free_block* temp = (free_block*)entry;
 	free_block* pre = NULL;
 	if(entry == NULL){		//the linkedlist is empty
-		ptr = (void*)((long)ptr - sizeof(void*));
+		ptr = (void*)((long)ptr - sizeof(free_block));
 		entry = (free_block*)ptr;
 		entry->next = NULL;
 		entry->size = size;
+		entry->page_id = ((free_block*)ptr)->page_id;
 		return;
 	}
 	while(temp != NULL){
@@ -229,53 +229,55 @@ kma_free(void* ptr, kma_size_t size)
 			temp = temp->next;
 		}
 		else{
+			ptr = (void*)((long)ptr - sizeof(free_block));
+			int tempPageid =((free_block*)ptr)->page_id;
+			ptr = (void*)((long)ptr + sizeof(free_block));
 			if(temp == entry){	//insert before the head node  pre == NULL
 				printf("insert before the head node\n");
-				if((free_block*)ptr + size == temp){
-					//merge into one node
-					ptr = (void*)((long)ptr - sizeof(void*));
-					((free_block*)ptr)->size = size + temp->size + sizeof(void*);
-					((free_block*)ptr)->next = temp->next;
-					entry = (free_block*)ptr;
-					printf("merge at head size is %d\n", entry->size);
+				if((tempPageid == temp->page_id) && ((free_block*)ptr + size == temp)){ 
+						//merge into one node //they are in the same page
+						ptr = (void*)((long)ptr - sizeof(free_block));
+						((free_block*)ptr)->size = size + temp->size + sizeof(free_block);
+						((free_block*)ptr)->next = temp->next;
+						((free_block*)ptr)->page_id = temp->page_id;
+						entry = (free_block*)ptr;
+						printf("merge at head size is %d\n", entry->size);
 				}
-				else{	//only change the pointer not the size
+				else{
 					printf("insert at head\n");
-					ptr = (void*)((long)ptr - sizeof(void*));
+					ptr = (void*)((long)ptr - sizeof(free_block));
 					((free_block*)ptr)->next = entry;	//insert it at head
 					((free_block*)ptr)->size = size;
-					entry = (free_block*)ptr;    ////!!!!not sure if it's correct way to move the entry pointer
-					// printf("size 1,2 %d %d\n", entry->size, ((free_block*)(entry->next))->size);
+					((free_block*)ptr)->page_id = tempPageid;
+					entry = (free_block*)ptr;    //change the entry pointer
 				}
 			}
 			else {		//insert node in the middle of the linkedlist 
 				printf("insert node in the middle of the linkedlist\n");
-				if(ptr + size == temp){ //merge the middle node with latter node
+				if((tempPageid == temp->page_id) && (ptr + size == temp)){
 					printf("merge 2 and 3 middle\n");
-					ptr = (void*)((long)ptr - sizeof(void*));
+					ptr = (void*)((long)ptr - sizeof(free_block));
 					((free_block*)ptr)->next = temp->next;
-					// if(temp->next == NULL){
-						printf("merge with the tail\n");
-						((free_block*)ptr)->size = size + temp->size + sizeof(void*);
-						// printf("tail size%d\n", ptr->size);
-					// }
-					// else{
-					// 	((free_block*)ptr)->size = size + temp->size + sizeof(void*);
-					// }
+					((free_block*)ptr)->size = size + temp->size + sizeof(free_block);
+					((free_block*)ptr)->page_id = tempPageid;
 					printf("after merge the size is %d\n", ((free_block*)ptr)->size);
-					// printf("size 2 and 3 %d\n", ((kma_page_t*)ptr)->size);
 				}
 				else{
-					ptr = (void*)((long)ptr - sizeof(void*));
+					printf("no mergering\n");
+					ptr = (void*)((long)ptr - sizeof(free_block));
 					((free_block*)ptr)->size = size;
 					((free_block*)ptr)->next = temp;
+					((free_block*)ptr)->page_id = tempPageid;
 				}
 				//merge the first node and middle node if necceary
-				free_block* pre_temp = (free_block*)((long)pre + pre->size + sizeof(void*));
-				if(pre_temp == ptr){
+				int prePageid = pre->page_id;
+				free_block* pre_temp = (free_block*)((long)pre + pre->size + sizeof(free_block));
+				if((prePageid == tempPageid) && (pre_temp == ptr)){
 					printf("merge 1 and 2 middle\n");
-					pre->size = pre->size + ((free_block*)ptr)->size + sizeof(void*);
+					int temp_size = pre->size;
+					pre->size = temp_size + ((free_block*)ptr)->size + sizeof(free_block);
 					pre->next = ((free_block*)ptr)->next;
+					pre->page_id = prePageid;
 					printf("after merge the size is %d\n", pre->size);
 				}
 				else{
@@ -285,26 +287,36 @@ kma_free(void* ptr, kma_size_t size)
 			break;
 		}
 	}
-	// if(temp == NULL){		//insert at tail
-	// 	if(pre+size == (free_block*)ptr){
-	// 		pre->size = size + pre->size;
-	// 		printf("merge at tail\n");
-	// 	}
-	// 	else{
-	// 		pre->next = (free_block*)ptr;
-	// 		((free_block*)ptr)->next = NULL;
-	// 		((free_block*)ptr)->size = size;
-	// 	}
-	// }
-	// printf("free page\n");
-	
+	if(temp == NULL){		//insert at tail
+		ptr = (void*)((long)ptr - sizeof(free_block));
+		int page_id = ((free_block*)ptr)->page_id;
+		
+		if((page_id == temp->page_id) && (pre + size + sizeof(free_block) == (free_block*)ptr)){		//same page;
+			// if(pre + size + sizeof(free_block) == (free_block*)ptr){
+			printf("merge at tail\n");
+			pre->size = size + pre->size + sizeof(free_block);
+			pre->next = NULL;
+			pre->page_id = page_id;
+			// }
+		}
+		else{
+			((free_block*)ptr)->next = NULL;
+			((free_block*)ptr)->size = size;
+			((free_block*)ptr)->page_id = page_id;
+			pre->next = (free_block*)ptr;
+		}
+	}
+	printf("free page\n");
+	checkFreePage();
 }
+
+///////unchanged
 
 void checkFreePage(){
 	//free page
 	free_block* freepage = entry;
 	free_block* freepage_pre = NULL;
-	int freepage_size = PAGESIZE - sizeof(kma_page_t*) - sizeof(void*);
+	int freepage_size = PAGESIZE - sizeof(kma_page_t*);
 	while(freepage != NULL){
 		if(freepage->size == freepage_size){
 			if(freepage == entry && freepage->next == NULL){
