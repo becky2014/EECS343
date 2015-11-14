@@ -8,7 +8,7 @@ typedef enum
     OCCUPIED
 } seat_state_t;
 
-typedef struct seat_struct
+typedef struct seat_struct			//TODO: add a lock in seat struct, pthread_mutex_lock lock
 {
     int id;
     int customer_id;
