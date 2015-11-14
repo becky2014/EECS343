@@ -283,3 +283,16 @@ int parse_int_arg(char* filename, char* arg)
     }
     return intarg;
 }
+
+void parseRequest(void *argument) {
+    parse_argument * arg = (parse_argument *)argument;
+    parse_request(arg->connfd, arg->request);
+}
+
+void processRequest(void *argument){
+    parse_argument * arg = (parse_argument *)argument;
+    process_request(arg->connfd, arg->request);
+}
+
+
+

@@ -12,7 +12,6 @@
 #include <errno.h>
 
 #include "thread_pool.h"
-//#include "thread_pool.c"
 #include "seats.h"
 #include "util.h"
 
@@ -84,7 +83,7 @@ int main(int argc,char *argv[])
     listen(listenfd, 10);   //10, The backlog parameter defines the maximum length for the queue of pending connections
 
     // TODO: Initialize your threadpool!
-    threadpool = pool_create(40, 50);       //pool_t *pool_create(int thread_count, int queue_size); 50/100
+    threadpool = pool_create(40, 100);       //pool_t *pool_create(int thread_count, int queue_size); 50/100
 
     // This while loop "forever", handling incoming connections
     while(1)
@@ -99,39 +98,17 @@ int main(int argc,char *argv[])
             The lines below will need to be modified! Some may need to be moved
             to other locations when you make your server multithreaded.
         *********************************************************************/
-        
-        //TODO: add parse_request and process_request to the working queue 
         parse_argument *argument = (parse_argument *)malloc(sizeof(parse_argument));
         argument->connfd = connfd;
         argument->request = (struct request *)malloc(sizeof(struct request));
-        pool_add_task(threadpool, parseProcess, (void *)argument);
-
-        // struct request req;
-        // parse_request fills in the req struct object
-        // parse_request(connfd, &req);
-        // process_request reads the req struct and processes the command
-        // process_request(connfd, &req);
-        // close(connfd);
+        pool_add_task(threadpool, parseRequest, (void *)argument);
     }
-}
-
-void parseProcess(void *argument) {
-    parse_argument * arg = (parse_argument *)argument;
-    parse_request(arg->connfd, arg->request);
-    process_request(arg->connfd, arg->request);
-    close(arg->connfd);
-    free(arg->request);
-    free(arg);
 }
 
 void shutdown_server(int signo){
     printf("Shutting down the server...\n");
-    
-    // TODO: Teardown your threadpool
     pool_destroy(threadpool);
-
-    // TODO: Print stats about your ability to handle requests.  
-    //print the average time 
+    // TODO: Print stats about your ability to handle requests. print the average time 
     unload_seats();
     close(listenfd);
     exit(0);

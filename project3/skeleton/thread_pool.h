@@ -4,15 +4,11 @@
 #include "util.h"
 
 
-typedef struct {
-  int connfd;
-  struct request *request;
-} parse_argument;
 
 typedef struct pool_task_t {
     void (*function)(void *);
-    // void *argument;
-    parse_argument *argument;
+    void *argument;
+    // parse_argument *argument;
     struct pool_task_t *nexttask;
 } pool_task_t;
 
@@ -23,7 +19,7 @@ typedef struct {
   pool_task_t *queue;       //head pointer of working queue
   pool_task_t *tail;        //tail pointer of working queue
   int thread_count;         //current number of avaliable threads in the pool
-  int task_queue_size_limit; //?????? if > queue size what will happen?
+  int task_queue_size_limit; //if > queue size, no more request accepted
   bool shutdown;             //shutdown boolean 
 } pool_t;
 

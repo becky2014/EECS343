@@ -8,7 +8,16 @@ struct request{
     char* resource;				//command they are asking for
 };
 
+typedef struct {
+  int connfd;
+  struct request *request;
+} parse_argument;
+
 void parse_request(int, struct request*);
 void process_request(int, struct request*);
+
+void parseRequest(void *argument);
+void processRequest(void *argument);
+
 
 #endif
